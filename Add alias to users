@@ -1,0 +1,37 @@
+# Path to the CSV file
+$csvPath = "C:\Temp\aliasreadyforscript.csv"
+ 
+# Import the CSV
+$aliasData = Import-Csv -Path $csvPath
+ 
+# Loop through each row in the CSV
+foreach ($row in $aliasData) {
+    # Ensure the values are not null and trim any whitespace
+    $SamAccountName = $row.SamAccountName
+    $NewAlias = $row.NewAlias
+
+    if ($SamAccountName -and $NewAlias) {
+        $SamAccountName = $SamAccountName.Trim()
+        $NewAlias = $NewAlias.Trim()
+    } else {
+        Write-Warning "Missing or empty values in row: $($row | Out-String)"
+        continue
+    }
+
+    # Attempt to add the alias to the user
+    try {
+        # Check if the user exists
+        $user = Get-ADUser -Identity $SamAccountName -Properties proxyAddresses
+ 
+        # Check if the alias is already present
+        if ($user.proxyAddresses -contains $NewAlias) {
+            Write-Host "Alias '$NewAlias' already exists for user '$SamAccountName'. Skipping."
+        } else {
+            # Add the alias to the user
+            Set-ADUser -Identity $SamAccountName -Add @{proxyAddresses = $NewAlias}
+            Write-Host "Alias '$NewAlias' successfully added to user '$SamAccountName'."
+        }
+    } catch {
+        Write-Error "Failed to add alias '$NewAlias' to user '$SamAccountName': $_"
+    }
+}
