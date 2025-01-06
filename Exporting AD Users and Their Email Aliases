@@ -1,0 +1,16 @@
+# Get all AD users and their proxyAddresses
+Get-ADUser -Filter * -Properties proxyAddresses | ForEach-Object {
+    # Get all aliases (the ones with "smtp:" prefix, excluding the primary)
+    $aliases = $_.proxyAddresses | Where-Object { $_ -like "smtp:*" }
+ 
+    # Join aliases with a semicolon, or leave empty if no aliases found
+    $aliasesString = if ($aliases) { $aliases -join ";" } else { "" }
+ 
+    # Create a custom object for export
+    [PSCustomObject]@{
+        DisplayName = $_.Name
+        Aliases = $aliasesString
+    }
+} | Export-Csv -Path "C:\temp\UsersWithAliases.csv" -NoTypeInformation -Encoding UTF8
+ 
+Write-Host "Export complete. File saved to C:\temp\UsersWithAliases.csv"
